@@ -116,6 +116,19 @@ logic                               uart_txd;   // <- UART
 logic                               uart_rts_n; // <- UART
 logic                               uart_dtr_n; // <- UART
 logic                               uart_irq;
+logic                               uart_resetn;
+// --- UART_AHB ------------------------------------------
+logic [31:0]                        uart_ahb_haddr;
+logic [ 2:0]                        uart_ahb_hburst;
+logic                               uart_ahb_hmastlock;
+logic [3:0]                         uart_ahb_hprot;
+logic [31:0]                        uart_ahb_hrdata;
+logic                               uart_ahb_hready;
+logic                               uart_ahb_hresp;
+logic [ 2:0]                        uart_ahb_hsize;
+logic [ 1:0]                        uart_ahb_htrans;
+logic [31:0]                        uart_ahb_hwdata;
+logic                               uart_ahb_hwrite;
 
 // --- PIO ----------------------------------------------
 logic [ 1:0]                        pio_led;
@@ -294,6 +307,41 @@ i_scr1 (
 assign scr1_irq = {'0, pio_pb_irq, uart_irq};
 
 //=======================================================
+//  UART
+//=======================================================
+ahb_lite_uart16550
+i_uart (
+//Common
+    .HCLK                      (cpu_clk),
+    .HRESETn                   (uart_resetn),
+//AHB-lite side
+    .HADDR                     (uart_ahb_haddr),
+    .HBURST                    (uart_ahb_hburst),
+    .HMASTLOCK                 (uart_ahb_hmastlock),
+    .HPROT                     (uart_ahb_hprot),
+    .HSEL                      (1'b1),
+    .HSIZE                     (uart_ahb_hsize),
+    .HTRANS                    (uart_ahb_htrans),
+    .HWDATA                    (uart_ahb_hwdata),
+    .HWRITE                    (uart_ahb_hwrite),
+    .HRDATA                    (uart_ahb_hrdata),
+    .HREADY                    (uart_ahb_hready),
+    .HRESP                     (uart_ahb_hresp),
+    .SI_Endian                 (),
+//UART side
+    .UART_SRX                  (uart_rxd),
+    .UART_STX                  (uart_txd),
+    .UART_RTS                  (uart_rts_n),
+    .UART_CTS                  (uart_rts_n),
+    .UART_DTR                  (uart_dtr_n),
+    .UART_DSR                  (uart_dtr_n),
+    .UART_RI                   (1'b1),
+    .UART_DCD                  (1'b1),
+  //UART internal
+    .UART_BAUD                 (uart_irq),
+    .UART_INT                  ()
+);
+//=======================================================
 //  FPGA Platform's System-on-Programmable-Chip (SOPC)
 //=======================================================
 arty_sopc
@@ -350,21 +398,18 @@ i_soc (
     //// DDR3 SDRAM initialization/calibration complete
     .ddr3_init_complete         (),
     // UART
-    .uart_rxd                   (uart_rxd),
-    .uart_txd                   (uart_txd),
-    .uart_rtsn                  (uart_rts_n),
-    .uart_ctsn                  (uart_rts_n),
-    .uart_dtrn                  (uart_dtr_n),
-    .uart_dsrn                  (uart_dtr_n),
-    .uart_ri                    (1'b1),
-    .uart_dcdn                  (uart_dtr_n),
-    .uart_baudoutn              (),
-    .uart_ddis                  (),
-    .uart_out1n                 (),
-    .uart_out2n                 (),
-    .uart_rxrdyn                (),
-    .uart_txrdyn                (),
-    .uart_irq                   (uart_irq),
+    .uart_ahb_haddr             (uart_ahb_haddr),
+    .uart_ahb_hburst            (uart_ahb_hburst),
+    .uart_ahb_hmastlock         (uart_ahb_hmastlock),
+    .uart_ahb_hprot             (uart_ahb_hprot),
+    .uart_ahb_hrdata            (uart_ahb_hrdata),
+    .uart_ahb_hready            (uart_ahb_hready),
+    .uart_ahb_hresp             (uart_ahb_hresp),
+    .uart_ahb_hsize             (uart_ahb_hsize),
+    .uart_ahb_htrans            (uart_ahb_htrans),
+    .uart_ahb_hwdata            (uart_ahb_hwdata),
+    .uart_ahb_hwrite            (uart_ahb_hwrite),
+    .uart_resetn                (uart_resetn),
     .pio_led_rgb_tri_o          (pio_led_rgb),
     .pio_led_tri_o              (pio_led),
     .pio_pb_tri_i               (pio_pb),
